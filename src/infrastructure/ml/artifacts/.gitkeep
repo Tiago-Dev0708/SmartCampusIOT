@@ -1,0 +1,3 @@
+# This directory holds trained ML model artifacts.
+# The LightGBM model file (smartcampus_model.txt) will be saved here
+# after training via POST /api/ml/train.
