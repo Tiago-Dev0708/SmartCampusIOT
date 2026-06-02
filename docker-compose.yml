@@ -1,0 +1,53 @@
+services:
+  api:
+    build: .
+    volumes:
+      - .:/app
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - db
+    networks:
+      - smart-campus-iot
+      - hadoop-network
+    # Hard Constraint: no ports exposed to the host (Zero Trust)
+    ports:
+      - "8000:8000"
+
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: smartcampus
+    ports:
+      - "5434:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - smart-campus-iot
+
+  # Note: The local Mosquitto container has been removed/decommissioned 
+  # as we are utilizing 'broker.hivemq.com' (public broker) to connect 
+  # to the cloud-based Wokwi simulator and allow external IoT data ingestion.
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: always
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+    command: tunnel --no-autoupdate --url http://api:8000 --protocol http2
+    networks:
+      - smart-campus-iot
+
+networks:
+  smart-campus-iot:
+  # Network of the Hadoop cluster (declared externally to allow namenode hostname resolution)
+  hadoop-network:
+    external: true
+
+volumes:
+  db_data:
